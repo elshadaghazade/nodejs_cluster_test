@@ -2,6 +2,8 @@ const conf = require('./conf.json');
 const http = require('http');
 const { fork } = require('child_process');
 const { SubprocWrapper } = require('./app/subproc_wrapper');
+const fs = require('fs');
+const path = require('path');
 const { equal } = require('assert');
 
 // if (conf.nodes instanceof int)
@@ -149,13 +151,50 @@ const listener = (req, res) => {
             }
         });
     } else if (req.method === 'GET') {
+
         res.writeHead(200, {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
             'Access-Control-Allow-Headers': 'Content-Type',
             'Access-Control-Allow-Credentials': true
         });
-        res.end('Hello World!');
+
+
+        if (/\.(json|css|js|png)$/gi.test(req.url)) {
+            const filePath = path.join(__dirname, 'build', req.url.slice(1));
+            if (fs.existsSync(filePath)) {
+                const stat = fs.statSync(filePath);
+                if (req.url.endsWith('.json')) {
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json'
+                    });
+                } else if (req.url.endsWith('css')) {
+                    res.writeHead(200, {
+                        'Content-Type': 'text/css'
+                    });
+                } else if (req.url.endsWith('js')) {
+                    res.writeHead(200, {
+                        'Content-Type': 'text/javascript'
+                    });
+                } else if (req.url.endsWith('png')) {
+                    res.writeHead(200, {
+                        'Content-Type': 'image/png'
+                    });
+                }
+                fs.createReadStream(filePath).pipe(res);
+            } else {
+                res.writeHead(404, 'Not Found!')
+                res.end('Page has not been found');
+            }
+        } else {
+            const indexPath = path.join(__dirname, 'build/index.html');
+            const content = fs.readFileSync(indexPath);
+            res.writeHead(200, {
+                'Content-Type': 'text/html'
+            });
+
+            res.end(content);
+        }
     }
 }
 
