@@ -20,3 +20,6 @@ In the **conf.json** file you can set count of nodes, port and frequency of gene
 
 # LOGS/SUCCESS.LOG FILE
 In the **./logs/success.log** file you can see how workers writes their logs to that file.
+
+# VIDEO DEMO
+[https://www.youtube.com/watch?v=5SnStsGkt0I](https://www.youtube.com/watch?v=5SnStsGkt0I)
