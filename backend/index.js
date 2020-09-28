@@ -2,6 +2,7 @@ const conf = require('./conf.json');
 const http = require('http');
 const { fork } = require('child_process');
 const { SubprocWrapper } = require('./app/subproc_wrapper');
+const { equal } = require('assert');
 
 // if (conf.nodes instanceof int)
 
@@ -53,82 +54,109 @@ const resetMasterNode = () => {
 }
 
 const listener = (req, res) => {
-    let body = [];
-    req.on('data', chunk => {
-        body.push(chunk);
-    }).on('end', () => {
-        body = Buffer.concat(body).toString();
-        body = JSON.parse(body);
 
-        switch(body.action) {
-            case 'add_new_node':
-                subproc = getNewNode();
-                subprocPool.push(subproc);
-                resetMasterNode();
+    if (req.method === 'POST' && req.url === '/api/') {
+        let body = [];
+        req.on('data', chunk => {
+            body.push(chunk);
+        }).on('end', () => {
+            body = Buffer.concat(body).toString();
+            body = JSON.parse(body);
 
-                res.writeHead(200, {
-                    'Content-Type': 'application/json'
-                });
+            switch(body.action) {
+                case 'add_new_node':
+                    subproc = getNewNode();
+                    subprocPool.push(subproc);
+                    resetMasterNode();
 
-                res.end(JSON.stringify({
-                    error: null,
-                    data: 'OK'
-                }));
-                break;
-            case 'set_master':
-                subprocPool.forEach(proc => {
-                    if (body.pid === proc.getPid() && proc.isMaster) {
-                        return;
-                    } else if (body.pid === proc.getPid()) {
-                        proc.setMaster(true);
-                    } else if (proc.isMaster) {
-                        proc.setMaster(false);
-                    }
-                });
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+                        'Access-Control-Allow-Headers': 'Content-Type',
+                        'Access-Control-Allow-Credentials': true
+                    });
 
-                res.writeHead(200, {
-                    'Content-Type': 'application/json'
-                });
+                    res.end(JSON.stringify({
+                        error: null,
+                        data: 'OK'
+                    }));
+                    break;
+                case 'set_master':
+                    subprocPool.forEach(proc => {
+                        if (body.pid === proc.getPid() && proc.isMaster) {
+                            return;
+                        } else if (body.pid === proc.getPid()) {
+                            proc.setMaster(true);
+                        } else if (proc.isMaster) {
+                            proc.setMaster(false);
+                        }
+                    });
 
-                res.end(JSON.stringify({
-                    error: null,
-                    data: 'OK'
-                }));
-                break;
-            case 'kill':
-                subprocPool.forEach(proc => {
-                    if (body.pid === proc.getPid()) {
-                        proc.exit();
-                        return;
-                    }
-                });
-                
-                res.writeHead(200, {
-                    'Content-Type': 'application/json'
-                });
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+                        'Access-Control-Allow-Headers': 'Content-Type',
+                        'Access-Control-Allow-Credentials': true
+                    });
 
-                res.end(JSON.stringify({
-                    error: null,
-                    data: 'OK'
-                }));
-                break;
-            case 'proc_list':
-                const response = subprocPool.map(proc => {
-                    return {
-                        isDead: proc.isDead(),
-                        pid: proc.getPid(),
-                        isMaster: proc.isMaster
-                    }
-                });
+                    res.end(JSON.stringify({
+                        error: null,
+                        data: 'OK'
+                    }));
+                    break;
+                case 'kill':
+                    subprocPool.forEach(proc => {
+                        if (body.pid === proc.getPid()) {
+                            proc.exit();
+                            return;
+                        }
+                    });
+                    
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+                        'Access-Control-Allow-Headers': 'Content-Type',
+                        'Access-Control-Allow-Credentials': true
+                    });
 
-                res.writeHead(200, {
-                    'Content-Type': 'application/json'
-                });
+                    res.end(JSON.stringify({
+                        error: null,
+                        data: 'OK'
+                    }));
+                    break;
+                case 'proc_list':
+                    const response = subprocPool.map(proc => {
+                        return {
+                            isDead: proc.isDead(),
+                            pid: proc.getPid(),
+                            isMaster: proc.isMaster
+                        }
+                    });
 
-                res.end(JSON.stringify(response));
-                break;
-        }
-    });
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+                        'Access-Control-Allow-Headers': 'Content-Type',
+                        'Access-Control-Allow-Credentials': true
+                    });
+
+                    res.end(JSON.stringify(response));
+                    break;
+            }
+        });
+    } else if (req.method === 'GET') {
+        res.writeHead(200, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Credentials': true
+        });
+        res.end('Hello World!');
+    }
 }
 
 const server = http.createServer(listener);
